@@ -1,4 +1,4 @@
-var GENEGEX = require("C:/Users/koferdo/Documents/NetBeansProjects/dummia/genegex_util.js");
+var GENEGEX = require("C:/Users/koferdo/Documents/NetBeansProjects/dummia/genegex_util.js"); 
 var GEN = new GENEGEX.GENREX();
 var defaultSeed = new GEN.getDefaultSeed();
 /**
