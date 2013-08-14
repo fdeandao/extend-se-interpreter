@@ -1,0 +1,21 @@
+{
+    "name": "extend-se-interpreter",
+    "description": "(pending)",
+    "version": "0.0.1",
+    "main": "./extend-se-interpreter.js",
+    "author": {
+        "name": "fdeandao",
+        "email": "fernando.deanda.d1@gmail.com"
+    },
+    "keywords": [],
+    "licenses": {
+        "type": "apache20"
+    },
+    "repository": {
+        "type": "git",
+        "url": "git://github.com/fdeandao/extend-se-interpreter.git"
+    },
+    "bugs": {
+        "web": "http://github.com/fdeandao/extend-se-interpreter/issues"
+    }
+}
