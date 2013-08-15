@@ -1,6 +1,6 @@
-var os = require("os"); 
+var os = require("os");
 var fs = require('fs');
-var cdb = require("couchdb-api");
+var cdb; try{cdb = require("couchdb-api");}catch(e){};
 var util = require('util');
 var exetime = new Date().getTime();
 var db;
@@ -63,6 +63,11 @@ var listeners = {
                 console.log("Listener: " + JSON.stringify(step));
                 console.log("Listener: success: " + info.success);
                 console.log("Listener: error: " + util.inspect(info.error));
+                if (info.attach) {
+                    fs.writeFile(info.attach.name + '.' + info.attach.type, info.attach.buffer, function(err) {
+                        console.log("Writefile: error: " + util.inspect(err));
+                    });
+                }
             }
         }
     },

@@ -1,4 +1,4 @@
-var GENEGEX = require("C:/Users/koferdo/Documents/NetBeansProjects/dummia/genegex_util.js"); 
+var GENEGEX = require("dummia");
 var GEN = new GENEGEX.GENREX();
 var defaultSeed = new GEN.getDefaultSeed();
 /**
@@ -17,9 +17,9 @@ LoopControl.prototype.next = function() {
 };
 LoopControl.prototype.getData = function(type, name) {
     if (type === "onfly") {
-        return this.dataStrategic[type][name].next();
+        return this.dataStrategic[type + "-data"][name].next();
     } else {
-        return this.dataStrategic[type][name][this.currentIndex];
+        return this.dataStrategic[type + "-data"][name][this.currentIndex];
     }
 };
 /* Return the first occurs */
@@ -35,23 +35,26 @@ LoopControl.prototype.defaultGetData = function() {
     }
 };
 
-function processDataStrategic(dataStrategic, types) {
-    for (var type in types) {
-        if (dataStrategic[type + "-exp"]) {
-            for (var v in dataStrategic[type + "-exp"]) {
-                var exp = dataStrategic[type + "-exp"][v];
+function processDataStrategic(dataStrategic, types, loopSize) {
+    for (var t = 0; t < types.length; t++) {
+        if (dataStrategic[types[t] + "-exp"]) {
+            for (var v in dataStrategic[types[t] + "-exp"]) {
+                var exp = dataStrategic[types[t] + "-exp"][v];
                 if (typeof exp === "string") {
                     exp = JSON.parse(exp);
                 }
-                if (!dataStrategic[type + "-data"]) {
-                    dataStrategic[type + "-data"] = {};
+                if (!dataStrategic[types[t] + "-data"]) {
+                    dataStrategic[types[t] + "-data"] = {};
                 }
-                if (type === "random") {
-                    dataStrategic[type + "-data"][v] = GEN.getRandomGenerator(GEN.transFromExpresion(exp), defaultSeed).run();
-                } else if (type === "onfly") {
-                    dataStrategic[type + "-data"][v] = GEN.getRandomGenerator(GEN.transFromExpresion(exp), defaultSeed);
+                if (types[t] === "random") {
+                    if (loopSize) {
+                        exp.v = loopSize;
+                    }
+                    dataStrategic[types[t] + "-data"][v] = GEN.getRandomGenerator(GEN.transFromExpresion(exp), defaultSeed).run();
+                } else if (types[t] === "onfly") {
+                    dataStrategic[types[t] + "-data"][v] = GEN.getRandomGenerator(GEN.transFromExpresion(exp), defaultSeed);
                 }
-                delete dataStrategic[type + "-exp"][v];
+                delete dataStrategic[types[t] + "-exp"][v];
             }
         }
     }
@@ -77,19 +80,21 @@ var implementProtoSteps = {
     },
     setElementText: function(protoStep, data) {
         protoStep.text = data;
+        return protoStep;
     },
     waitForTextPresent: function(protoStep, data) {
         protoStep.text = data;
+        return protoStep;
     }
 };
 
 function buildStep(protoStep, data) {
     if (protoStep.target) {
         return (protoStep[protoStep.target] = data);
-    }else if(protoStep.fullreplace === true){
+    } else if (protoStep.fullreplace === true) {
         return data;
-    }else if (implementProtoSteps[protoStep.otype]) {
-        return implementProtoSteps[protoStep.otype](protoStep, data);
+    } else if (implementProtoSteps[protoStep["step-type"]]) {
+        return implementProtoSteps[protoStep["step-type"]](protoStep, data);
     } else {
         throw "Implement for protoStep not found " + protoStep.type;
     }
@@ -112,7 +117,7 @@ exports.get = function(stepType) {
                     throw "super-for already exists " + loopName;
                 }
                 var dataStrategic = tr.p('data-strategic');
-                processDataStrategic(dataStrategic, ["random", "fly"]);
+                processDataStrategic(dataStrategic, ["random", "onfly"], loopSize);
                 tr.loopControl[loopName] = new LoopControl(dataStrategic, loopSize, tr.stepIndex);
                 cb({'success': true});
             }
@@ -208,11 +213,34 @@ exports.get = function(stepType) {
     } else if (stepType == "attach-screenshot") {
         return {
             'run': function(tr, cb) {
-                tr.do('takeScreenshot', [], cb, function(err, base64Image) {
-                    var decodedImage = new Buffer(base64Image, 'base64');
-                    var name = tr.p('name');
-                    cb({'success': !err, 'error': err, 'attach': {'buffer': decodedImage, 'name': name + new Date().getTime(), 'type': 'png'}});
-                });
+                var step = tr.currentStep();
+                if (step.nameCompose) {
+                    var composeLen = step.nameCompose.length;
+                    var name = "";
+                    for(var i=0; i<composeLen; i++){
+                        if(step.nameCompose[i].time){
+                            name+= new Date().getTime();
+                        }else if(step.nameCompose[i].sequence){
+                            if(tr.loopControl[step.nameCompose[i].sequence]){
+                                name+=tr.loopControl[step.nameCompose[i].sequence].currentIndex;
+                            }
+                        }else{
+                            name+= step.nameCompose[i];
+                        }
+                    }
+                    tr.do('takeScreenshot', [], cb, function(err, base64Image) {
+                        var decodedImage = new Buffer(base64Image, 'base64');
+                        cb({'success': !err, 'error': err, 'attach': {'buffer': decodedImage, 'name': name, 'type': 'png'}});
+                    });
+                }else{
+                    cb({'success': false, 'error': "No compose name found"});
+                }
+            }
+        };
+    } else if (stepType == "intentional-error") {
+        return {
+            'run': function(tr, cb) {
+                cb({'success': false, 'error': "intentional-error", 'message': tr.currentStep().message});
             }
         };
     }
