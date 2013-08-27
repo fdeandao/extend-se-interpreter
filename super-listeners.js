@@ -42,6 +42,7 @@ DB.prototype.saveTest = function(testData) {
     for (var i = 0; i < testData.endStep.length; i++) {
         if (testData.endStep[i].info && testData.endStep[i].info.attach) {
             attachs.push(testData.endStep[i].info.attach);
+            testData.endStep[i].info.attachname = testData.endStep[i].info.attach.name;
             delete testData.endStep[i].info.attach;
         }
     }
